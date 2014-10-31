@@ -23,6 +23,15 @@ except AttributeError:
 
 logger = logging.getLogger('')
 
+replaceDict = {
+	}
+
+regexDict = {
+	r'1\.' : counter,
+	r'\[\[(.*?)\]\]' : removeOuterBrackets,
+	r'\{\{\{code:(.*?)\}\}\}' : removeTypesetting,
+	r'\{\{\{math:(.*?)\}\}\}' : removeTypesetting
+	}
 
 class ConsoleOut():
 	"""Handler for console output.

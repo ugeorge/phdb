@@ -37,8 +37,6 @@ class Backend():
 		widths = [e for e in map(parseElement, form[1]) if isinstance(e, int)]
 		flags  = [e for e in map(parseElement, form[1]) if isinstance(e, str)]
 		form   = form[0]
-		print widths
-		print flags
 		if form == 'console':
 			self._back = ConsoleOut(widths)
 		elif form == 'plain':
