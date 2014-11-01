@@ -19,6 +19,7 @@ setup(name = "phdb",
 	#package_data = {'package' : files },
 	#'runner' is in the root.
 	scripts = ["runner"],
+	test_suite="tests",
 	long_description = """Really long text here.""" 
 	#
 	#This next part it for the Cheese Shop, look a little down the page.

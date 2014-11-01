@@ -2,14 +2,14 @@ import os
 import logging
 import ply.lex  as lex
 import ply.yacc as yacc
-'''
+
 try:
 	confPath = os.path.join(os.getenv('PHDB_CFG_PATH'), "logger.conf")
 	logging.config.fileConfig(confPath)
 except AttributeError:
-	log.warn("PHDB_CFG_PATH was not set. Cannot log events.")
+	print "PHDB_CFG_PATH was not set. Cannot log events."
 log = logging.getLogger('')
-'''
+
 tokens = [ 'TAG', 'RPAR', 'LPAR', 'NOT', 'AND','OR', 'WILD' ]
 t_TAG = r'[a-zA-Z_][a-zA-Z0-9_-]*'
 t_RPAR = r'\)'

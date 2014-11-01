@@ -126,14 +126,8 @@ class TextParser():
 			self.con.insert( "Tags__Entries", "(Entry, Tag)", [(entryId, tag),])
 
 	def __entry_post_analysis(self,entry):
-		'''Post-analysis of the entry text. It identifies:
-
-		 * entry or source cross-references
- 		 * links
-		 * images
-
-		and acts accordingy.'''
-		newrefs = re.findall(r'\[\[(.+?)\]\]', entry) #find in-text references of type [[johndoe95]]
+		'''Post-analysis of the entry text. It identifies entry or source cross-references and acts accordingy.'''
+		newrefs = re.findall(r'\[\[(.+?)\]\]', entry) #find in-text references of type [[foo]]
 		for newref in newrefs:
 			if newref.startswith('Ref:'):
 				self.__add_new_reference(utils.strAfter(newref,'Ref:'))

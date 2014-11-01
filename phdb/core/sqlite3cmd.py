@@ -22,7 +22,7 @@ try:
 	confPath = os.path.join(os.getenv('PHDB_CFG_PATH'), "logger.conf")
 	logging.config.fileConfig(confPath)
 except AttributeError:
-	log.warn("PHDB_CFG_PATH was not set. Cannot log events.")
+	pass
 logger = logging.getLogger('')
 
 def isDatabase(filename):
@@ -106,7 +106,27 @@ def createDb(name, loc, resources):
 		cursor.execute("INSERT INTO resources VALUES('" + resources + "')")
 	return
 
+class SqLite3FilterParser():
+	def __init__ (self, base):
+		self.base = base
 
+	def parseNode (self, op, l, r = None):
+		if op == 'TAG':
+			return self.base + "='" + l + "' "
+		elif op == 'WILDB':
+			return self.base + "LIKE '%" + l + "' "
+		elif op == 'WILDA':
+			return self.base + "LIKE '" + l + "%' "
+		elif op == '/':
+			return 'NOT ' + self.parseNode(*l);
+		elif op == '()':
+			return '(' + self.parseNode(*l) + ') ';
+		elif op == '&':
+			return self.parseNode(*l) + ' AND ' + self.parseNode(*r)
+		elif op == '|':
+			return self.parseNode(*l) + ' OR ' + self.parseNode(*r)
+
+	
 
 class Connection():
 	"""Creates a floating connection instance to a given database that can be passed
@@ -203,6 +223,26 @@ class Connection():
 		col_names = [cn[0] for cn in self.cursor.description]
 		rows = self.cursor.fetchall()
 		return [x[0] for x in rows]
+
+	def removeFrom(self, table, col, exp):
+		"""Simple SQLite3 remove statement.
+
+		:parameter db: Path to the database.
+		:type db: str.
+		:parameter table: Path to the database.
+		:type table: str.
+		:parameter col: Column.
+		:type col: str.
+		:parameter exp: Filter expression based on the previous column.
+		:type exp: str.
+		"""
+		filterTree = getExpTree(exp)
+		parser     = SqLite3FilterParser(col)
+		condition  = parser.parseNode(*filterTree)
+		command = 'DELETE FROM ' + table + " WHERE " + condition + ';'
+		
+		self.cursor.execute(command)        
+		self.connection.commit()
 		
 
 	def replaceLinks(self, original, link, replacePairs):
@@ -330,7 +370,8 @@ class Connection():
 		tags = ''
 		if filterExp:
 			filterTree = getExpTree(filterExp)
-			tags       = 'WHERE ' + _parseNode(*filterTree)
+			parser     = Sqlite3FilterParser('te.Tag')
+			tags       = 'WHERE ' + parser.parseNode(*filterTree)
 
 		command = " \n"\
 			+ "\tSELECT *, GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
@@ -500,7 +541,6 @@ def _tagsListToStr(tagLst):
 	string = string[:-2]
 	return string
 
-
 def _srcListToStr(column, srcList):
 	"""Helper. Sources list to string for query."""
 	string = ''
@@ -514,21 +554,7 @@ def _srcListToStr(column, srcList):
 def completeCommand(table, columns):
 	"""Helper for completing SQL statements"""
 	wildcards = "?," * (columns.count(',') + 1)
-	return "INTO " + table + columns \
+	return "INTO " + table + " " + columns \
 			+ " VALUES (" +  wildcards[:-1] + ")"
 
-def _parseNode (op, l, r = None):
-	if op == 'TAG':
-		return "te.Tag='" + l + "' "
-	elif op == 'WILDB':
-		return "te.Tag LIKE '%" + l + "' "
-	elif op == 'WILDA':
-		return "te.Tag LIKE '" + l + "%' "
-	elif op == '/':
-		return 'NOT ' + _parseNode(*l);
-	elif op == '()':
-		return '(' + _parseNode(*l) + ') ';
-	elif op == '&':
-		return _parseNode(*l) + ' AND ' + _parseNode(*r)
-	elif op == '|':
-		return _parseNode(*l) + ' OR ' + _parseNode(*r)
+
