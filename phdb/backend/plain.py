@@ -63,8 +63,7 @@ class PlainOut():
 def reviews(variables):
 	dbCon = dbapi.Connection(variables['db'])
 	col_names, rows = dbCon.qGetSources(
-		srcs      = variables['sources'],
-		cols      = variables['columns'])	
+		srcs      = variables['sources'])	
 	return col_names, rows
 
 
@@ -72,8 +71,5 @@ def entries(variables):
 	dbCon = dbapi.Connection(variables['db'])
 	col_names, rows = dbCon.qGetEntries(
 		filterExp = variables['filter'],
-		srcs      = variables['sources'],
-		cols      = variables['columns'])	
-	parser = filterparse.FilterParser(rows, len(col_names)-1)
-	fRows = parser.parse(variables['filter'])
+		srcs      = variables['sources'])	
 	return col_names, fRows

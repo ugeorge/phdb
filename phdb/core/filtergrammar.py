@@ -2,21 +2,22 @@ import os
 import logging
 import ply.lex  as lex
 import ply.yacc as yacc
-
+'''
 try:
 	confPath = os.path.join(os.getenv('PHDB_CFG_PATH'), "logger.conf")
 	logging.config.fileConfig(confPath)
 except AttributeError:
 	log.warn("PHDB_CFG_PATH was not set. Cannot log events.")
 log = logging.getLogger('')
-
-tokens = [ 'TAG', 'RPAR', 'LPAR', 'NOT', 'AND','OR' ]
+'''
+tokens = [ 'TAG', 'RPAR', 'LPAR', 'NOT', 'AND','OR', 'WILD' ]
 t_TAG = r'[a-zA-Z_][a-zA-Z0-9_-]*'
 t_RPAR = r'\)'
 t_LPAR = r'\('
 t_NOT = r'/'
 t_AND = r'&'
 t_OR = r'\|'
+t_WILD = r'\*'
 t_ignore  = ' \t\v\r' # whitespace
 
 def t_error(t):
@@ -42,8 +43,8 @@ def p_term_factor(p):
 	p[0] = p[1]
 
 def p_factor_tag(p): 
-	'''factor : TAG'''
-	p[0] = ('TAG',p[1])
+	'''factor : wildtag'''
+	p[0] = p[1]
 
 def p_not(p):
 	'''factor : NOT factor'''
@@ -51,28 +52,28 @@ def p_not(p):
 
 def p_par(p): 
 	'''factor : LPAR expr RPAR'''
-	p[0] = p[2]
+	p[0] = ('()',p[2])
+
+def p_wildtag_tag(p): 
+	'''wildtag : TAG'''
+	p[0] = ('TAG',p[1])
+
+def p_wildtag_wildb(p): 
+	'''wildtag : WILD TAG'''
+	p[0] = ('WILDB',p[2])
+
+def p_wildtag_wilda(p): 
+	'''wildtag : TAG WILD'''
+	p[0] = ('WILDA',p[1])
+
 
 def p_error(t): 
 	raise NameError("Syntax error at '%s'" % t.value)
 
 yacc.yacc() 
 
-class FilterParser():
-	def __init__(self, querryRes, tagPos):
-		self._data = set(querryRes)
-		self._p = tagPos
 
-	def parse(self, filtExp):
-		tree = yacc.parse(filtExp)
-		return list(self._parseNode(*tree))
-	
-	def _parseNode (self, op, l, r = None):
-		if op == 'TAG':
-			return set(filter(lambda x: l in x[self._p], self._data))
-		elif op == '/':
-			return self._data - self._parseNode(*l)
-		elif op == '&':
-			return self._parseNode(*l).intersection(self._parseNode(*r))
-		elif op == '|':
-			return self._parseNode(*l).union(self._parseNode(*r))
+def getExpTree(filtExp):
+	return yacc.parse(filtExp)
+
+

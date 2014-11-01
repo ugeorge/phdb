@@ -15,6 +15,7 @@ import sys
 import sqlite3 as lite
 
 from names import *
+from filtergrammar import getExpTree
 import phdb.tools.utils as utils
 
 try:
@@ -80,14 +81,17 @@ def createDb(name, loc, resources):
 		cursor.execute("DROP TABLE IF EXISTS Resources")
 		cursor.execute("CREATE TABLE Source( \
 			BibRef TEXT UNIQUE NOT NULL PRIMARY KEY, \
-			About TEXT, \
-			Conclusion TEXT)")
+			Link TEXT, \
+			About TEXT)")
 		cursor.execute("CREATE TABLE Entries(\
 			Id INTEGER PRIMARY KEY AUTOINCREMENT, \
 			Source TEXT,\
-			At TEXT,\
-			Info TEXT, \
-			Label TEXT)")
+			At TEXT,    \
+			Info TEXT,  \
+			Label TEXT, \
+			Cites TEXT, \
+			Image TEXT, \
+			Crefs TEXT)")
 		cursor.execute("CREATE TABLE Tags(\
 			Tag TEXT UNIQUE NOT NULL PRIMARY KEY)")
 		cursor.execute("CREATE TABLE Xrefs(\
@@ -220,7 +224,7 @@ class Connection():
 		linkTab = link[0]
 		linkCol = link[1]
 		for data in replacePairs: 
-			logger.debug("Replacing '" +data[0]+ "' with '" + data[1])
+			logger.info("Replacing '" +data[0]+ "' with '" + data[1])
 			self.cursor.execute("INSERT OR IGNORE INTO " + origTab + " (" + origCol \
 					+ ") VALUES (?)", (data[1],) )
 			self.connection.commit()
@@ -247,6 +251,7 @@ class Connection():
 		linkTab = link[0]
 		linkCol = link[1]
 		for data in removeList:
+			logger.info("Removing '" + data + "'")
 			command = "DELETE FROM " + linkTab + " WHERE " + linkCol + " = '" + data + "';"
 			self.cursor.execute(command)    
 			self.connection.commit()
@@ -276,7 +281,7 @@ class Connection():
 			logger.error(str(e.__class__) + " " + ', '.join(e.args))
 		return col_names, rows
 
-	def qGetSources(self, srcs, cols):
+	def qGetSources(self, srcs):
 		"""Executes a pre-defined query which returns information about sources and
 		writes it to a chosen backend.
 
@@ -284,23 +289,19 @@ class Connection():
 		:type db: str.
 		:parameter srcs: List of sources, if specified. Otherwise all sources will be returned.
 		:type srcs: [str,]
-		:parameter cols: List of columns, if specified. Otherwise a pre-defined set of cols 
-		  will be shown.
-		:type cols: str.
 		:returns: [str,] , [(str,),] -- column headers and data rows
 		"""
 		col_names = []
 		rows = []
 		command = "\n" \
-			+ "\tSELECT s.BibRef, " +  _colsListToStr("s.", cols, 's.About, s.Conclusion') + " \n"\
-			+ "\t	, GROUP_CONCAT(distinct x.RefTo) AS " + REFERS + " \n"\
-			+ "\t	, GROUP_CONCAT(distinct t.Tag) AS Tags"\
+			+ "\tSELECT *, GROUP_CONCAT(distinct x.RefTo) AS " + REFERS + ", \n"\
+			+ "\t          GROUP_CONCAT(distinct t.Tag) AS " + TAGS + ", \n"\
 			+ "\tFROM Source AS s \n"\
 			+ "\tLEFT JOIN Entries AS e ON e.Source = s.BibRef \n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
 			+ "\tLEFT JOIN Xrefs AS x ON x.RefBy = s.BibRef \n"\
-			+ "\t"+ _srcListToStr("e.Source", srcs) +" \n"\
+			+ "\t"+ _srcListToStr("s.BibRef", srcs) +" \n"\
 			+ "\tGROUP BY s.BibRef; "
 		logger.debug(command)
 		self.cursor.execute(command)        
@@ -309,55 +310,10 @@ class Connection():
 		col_names = [cn[0] for cn in self.cursor.description]
 		rows = self.cursor.fetchall()
 		logger.debug(str(rows))
-		rows = [tuple(map(utils.treatStr, x)) for x in rows]
 		return col_names, rows
 
-	def qGetEntries(self, srcs, filterExp, cols):
-		"""Executes a pre-defined query which returns (idea) entries and
-		writes it to a chosen backend.
 
-		:parameter db: Path to the database.
-		:type db: str.
-		:parameter srcs: List of sources, if specified. Otherwise all sources will be returned.
-		:type srcs: [str,].
-		:parameter filterExp: Filter expression. Will be parsed according 
-		  to :mod:`phdbcommand.filterparse`
-		:type filterExp: str.
-		:parameter cols: List of columns, if specified. Otherwise a pre-defined set of cols 
-		  will be shown.
-		:type cols: str.
-		:returns: [str,] , [(str,),] -- column headers and data rows
-		"""
-		col_names = []
-		rows = []
-		tags = filter(None, re.split("\(|\)|\&| |\/|\|", filterExp))
-		if not tags:
-			logger.error("You did not provide any tags!")
-			return
-
-		command = " \n"\
-			+ "\tSELECT e.Id, "+ _colsListToStr("e.", cols, 'e.Info, e.' + BIBREFSOURCE + ', e.At') +", \n"\
-			+ "\t	 GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
-			+ "\tFROM Entries AS e\n"\
-			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
-			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
-			+ "\tWHERE EXISTS ( SELECT * \n"\
-			+ "\t			   FROM Tags__Entries AS tet\n"\
-			+ "\t			   WHERE tet.Entry = e.Id \n"\
-			+ "\t			   AND tet.Tag IN ("+ _tagsListToStr(tags) +") \n"\
-			+ "\t			 )\n"\
-			+ "\t"+ _srcListToStr("e.Source", srcs) +" \n"\
-			+ "\tGROUP BY e.Id; "
-		logger.debug(command)
-		self.cursor.execute(command)        
-		self.connection.commit()
-
-		col_names = [cn[0] for cn in self.cursor.description]
-		rows = self.cursor.fetchall()
-		rows = [tuple(map(utils.treatStr, x)) for x in rows]
-		return col_names, rows
-
-	def qGetEntriesWLabels(self, srcs, filterExp, cols):
+	def qGetEntries(self, srcs, filterExp):
 		"""Executes a pre-defined query which returns (idea) entries and
 		writes it to a chosen backend. Includes lable column.
 
@@ -368,30 +324,21 @@ class Connection():
 		:parameter filterExp: Filter expression. Will be parsed according 
 		  to :mod:`phdbcommand.filterparse`
 		:type filterExp: str.
-		:parameter cols: List of columns, if specified. Otherwise a pre-defined set of cols 
-		  will be shown.
-		:type cols: str.
 		:returns: [str,] , [(str,),] -- column headers and data rows
 		"""
-		col_names = []
-		rows = []
-		tags = filter(None, re.split("\(|\)|\&| |\/|\|", filterExp))
-		if not tags:
-			logger.error("You did not provide any tags!")
-			return
+
+		tags = ''
+		if filterExp:
+			filterTree = getExpTree(filterExp)
+			tags       = 'WHERE ' + _parseNode(*filterTree)
 
 		command = " \n"\
-			+ "\tSELECT e.Id, "+ _colsListToStr("e.", cols, 'e.Info, e.' + BIBREFSOURCE + ', e.At') +", e.Label, \n"\
-			+ "\t	 GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
-			+ "\tFROM Entries AS e\n"\
+			+ "\tSELECT *, GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
+			+ "\t	FROM Entries AS e\n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
-			+ "\tWHERE EXISTS ( SELECT * \n"\
-			+ "\t			   FROM Tags__Entries AS tet\n"\
-			+ "\t			   WHERE tet.Entry = e.Id \n"\
-			+ "\t			   AND tet.Tag IN ("+ _tagsListToStr(tags) +") \n"\
-			+ "\t			 )\n"\
-			+ "\t"+ _srcListToStr("e.Source", srcs) +" \n"\
+			+ "\t" + tags +" \n"\
+			+ "\t" + _srcListToStr("e.Source", srcs) +" \n"\
 			+ "\tGROUP BY e.Id; "
 		logger.debug(command)
 		self.cursor.execute(command)        
@@ -402,29 +349,23 @@ class Connection():
 		rows = [tuple(map(utils.treatStr, x)) for x in rows]
 		return col_names, rows
 
-	def qGetCrefs(self, srcs, cols, lables):
-		"""Executes a pre-defined query which returns (idea) entries and
-		writes it to a chosen backend. Includes lable column.
+	def qGetCrefs(self, srcs, lables):
+		"""Executes a pre-defined query which returns entries associated with a label.
 
 		:parameter db: Path to the database.
 		:type db: str.
 		:parameter srcs: List of sources, if specified. Otherwise all sources will be returned.
 		:type srcs: [str,].
-		:parameter filterExp: Filter expression. Will be parsed according 
-		  to :mod:`phdbcommand.filterparse`
-		:type filterExp: str.
-		:parameter cols: List of columns, if specified. Otherwise a pre-defined set of cols 
-		  will be shown.
-		:type cols: str.
+		:parameter labels: List of lables associated with the needed entries
+		:type labels: [str,]
 		:returns: [str,] , [(str,),] -- column headers and data rows
 		"""
 		col_names = []
 		rows = []
 
 		command = " \n"\
-			+ "\tSELECT e.Id, "+ _colsListToStr("e.", cols, 'e.Info, e.' + BIBREFSOURCE + ', e.At') +", e.Label, \n"\
-			+ "\t	 GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
-			+ "\tFROM Entries AS e\n"\
+			+ "\tSELECT *, GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
+			+ "\t	FROM Entries AS e\n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
 			+ "\tWHERE e.Label in ("+ _tagsListToStr(lables) +") \n"\
@@ -540,14 +481,6 @@ class Connection():
 				invalidTags.append(row)
 		return invalidTags
 
-def _tagsListToStr(tagLst):
-	"""Helper. Tag list to string for query."""
-	string = ''
-	for tag in tagLst:
-		string = string + "'" + tag + "', "
-	string = string[:-2]
-	return string
-
 def _colsListToStr(prefix, colLst, default):
 	"""Helper. Column list to string for query."""
 	string = ''
@@ -557,6 +490,14 @@ def _colsListToStr(prefix, colLst, default):
 		string = string[:-2]
 	else:
 		string = default
+	return string
+
+def _tagsListToStr(tagLst):
+	"""Helper. Tag list to string for query."""
+	string = ''
+	for tag in tagLst:
+		string = string + "'" + tag + "', "
+	string = string[:-2]
 	return string
 
 
@@ -576,3 +517,18 @@ def completeCommand(table, columns):
 	return "INTO " + table + columns \
 			+ " VALUES (" +  wildcards[:-1] + ")"
 
+def _parseNode (op, l, r = None):
+	if op == 'TAG':
+		return "te.Tag='" + l + "' "
+	elif op == 'WILDB':
+		return "te.Tag LIKE '%" + l + "' "
+	elif op == 'WILDA':
+		return "te.Tag LIKE '" + l + "%' "
+	elif op == '/':
+		return 'NOT ' + _parseNode(*l);
+	elif op == '()':
+		return '(' + _parseNode(*l) + ') ';
+	elif op == '&':
+		return _parseNode(*l) + ' AND ' + _parseNode(*r)
+	elif op == '|':
+		return _parseNode(*l) + ' OR ' + _parseNode(*r)

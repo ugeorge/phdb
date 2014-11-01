@@ -118,6 +118,7 @@ def find_between( s, first, last ):
 	except ValueError:
 		return "", s
 
+#TODO: WTF, dude?!
 def treatStr(val):
 	"""Beautifies by adding spaces after commas in strings from lists.
 
