@@ -37,6 +37,10 @@ def main():
 	args = parser.parse_args()
 
 	settings = Settings(args)
+	# set the configuration path as an environment variable for modules that cannot
+	# load a settings object
+	os.environ["PHDB_CFG_PATH"] = settings.configPath
+
 	
 	#command execution
 	import interface.cli as cli

@@ -1,31 +1,33 @@
 #!phdb
 
-######################################################################
-##
-## TITLE: Towards the classification of marshmallows
-##
-## BIBREF: ugeorge14
-##
-## ABOUT: marshmallows -- good
-##
-## REFERENCES:
-##
-## TAGS: marshmallow, modern-philosophy
-##
-######################################################################
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% TITLE: Towards the classification of marshmallows
+%%
+%% BIBREF: ugeorge14
+%%
+%% ABOUT: marshmallows -- good
+%%
+%% REFERENCES:
+%%
+%% TAGS: marshmallow
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 TAG: catchphrase, motivation
 AT: p2
 Marshmallows are good! [[Cref:haddaway93/what]]
- * big
- * juicy
- * delicious
+ # big
+ # juicy
+ # delicious
 
 
 TAG: state-of-the-art
 LABEL:art
-[[Img]]
+[[Img:marshmallows.jpg]]
 
 TAG: catchphrase
-According to [[Cref:haddaway93]], "Baby, don't hurt me!" 
+According to [[Ref:haddaway93]], "Baby, don't hurt me" 
 Here, have a marshmallow [[Cref:art]]
+
+

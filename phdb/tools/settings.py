@@ -35,9 +35,6 @@ class Settings:
 		if not os.path.exists(configPath):
 			os.makedirs(configPath)
 		self.configPath = configPath
-		# set the configuration path as an environment variable for modules that cannot
-		# load a settings object
-		os.environ["PHDB_CFG_PATH"] = self.configPath
 
 		# write a logger configuration file, in the config path
 		self.loggerConfFile = os.path.join(self.configPath, "logger.conf")

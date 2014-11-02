@@ -90,7 +90,6 @@ def createDb(name, loc, resources):
 			Info TEXT,  \
 			Label TEXT, \
 			Cites TEXT, \
-			Image TEXT, \
 			Crefs TEXT)")
 		cursor.execute("CREATE TABLE Tags(\
 			Tag TEXT UNIQUE NOT NULL PRIMARY KEY)")
@@ -196,7 +195,7 @@ class Connection():
 		:parameter columns: Columns written as `(col1,col2,...)`.
 		:type columns: str.
 		:parameter data: Data to be introduced as list of tuples.
-		:type data: [(str,),]
+		:type data: (str,)
 		"""
 		command   =	"INSERT " + completeCommand(table, columns)
 		self.cursor.execute(command, data)

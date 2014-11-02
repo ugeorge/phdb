@@ -34,7 +34,7 @@ class TextParser():
 		self.logger = logging.getLogger('phdb.frontend.text')
 		self.path = path
 		self.con = connection
-		self._bibref = ''
+		self.bibref = ''
 		self._genTags = []
 
 	def harvest(self):
@@ -50,86 +50,132 @@ class TextParser():
 			with open(filename, 'r') as f:
 				if "#!phdb" in f.readline():
 					self.logger.debug("Found phdb file: " + filename)
-					self.__add_source_info(f)
-					self.__add_general_refs(f)
-					self.__add_general_tags(f)
-					self.__add_entries(f)
+					self.__parse_header(f)
+					self.__parse_entries(f)
 					self.con.commit()
 
-	def __add_source_info(self, f):
+	def __parse_header(self, f):
 		'''Add the source info'''
-		self._bibref,f = utils.strAfterF(f, 'BIBREF:')
-		about,       f = utils.strAfterF(f, 'ABOUT:')
-		concl,       f = utils.strAfterF(f, 'CONCLUSION:')
-		self.con.insertOrReplace(                  \
-								"Source",                      \
-								"(BibRef, About, Conclusion)", \
-								[(self._bibref, about, concl),])
-		self.logger.debug("Added source: " + self._bibref)
+		header              = _strHeaderF(f)
+		self.bibref, header = _strBetween(header, 'BIBREF:', '\n')
+		about, header       = _strBetween(header, 'ABOUT:', '\n')
+		self.con.insertOrReplace(  "Source", "(BibRef, About)", [(self.bibref, about),])
+		self.logger.debug("Added source: " + self.bibref)
 
-	def __add_general_refs(self, f):
-		'''Add the pre-defined references'''
-		xrefs,f = utils.strAfterF(f, 'REFERENCES:')
+		xrefs, header = _strBetween(header, 'REFERENCES:', '\n')
 		if xrefs.strip():
-			newSources = []
-			newXrefs = []
-			for ref in utils.splitBy(xrefs,','):
-				ref = ref.strip()
-				newSources.append((ref,))
-				newXrefs.append((self._bibref, ref))
-				self.logger.debug("Found reference: " + str((self._bibref, ref)))
-			self.con.insertOrIgnore( "Source", "(BibRef)", newSources)
+			newXrefs = [(self.bibref, x.strip(),) for x in utils.splitBy(xrefs,',')]
 			self.con.insert( "Xrefs", "(RefBy, RefTo)", newXrefs)
-
-	def __add_general_tags(self, f):
-		'''Add the pre-defined tags for this source'''
-		gTags,f = utils.strAfterF(f, 'TAGS:')
-		generalTags = []
+		
+		gTags, header = _strBetween(header, 'REFERENCES:', '\n')
+		self.genTags = utils.splitBy(gTags,',')
 		if gTags.strip():
-			generalTags = [(x.strip(),) for x in utils.splitBy(gTags,',')]
+			generalTags = [(x.strip(),) for x in self.genTags]
 			self.con.insertOrIgnore( "Tags", "(Tag)", generalTags)
 
-
-	def __add_entries(self, f):
+	def __parse_entries(self, f):
 		'''Add the entries for a source'''
-		entry,f = utils.strAfterF(f, 'TAG:')
+		entry,f = _strAfterF(f, 'TAG:')
 		while entry:
 			self.logger.debug("New entry found:")
 			self.__add_new_entry(entry)
-			entry,f = utils.strAfterF(f, 'TAG:')
-
-	def __add_new_reference(self, newref):
-		'''Add a new reference discovered in-line in the entries'''
-		self.con.insertOrIgnore( "Source", "(BibRef)", [(newref,),])
-		self.con.insertOrIgnore( "Xrefs", "(RefBy, RefTo)", [(self._bibref, newref),])
-		self.logger.debug("Added new reference to: " + newref)
+			entry,f = _strAfterF(f, 'TAG:')
 
 	def __add_new_entry(self, entry):
 		'''Add a new entry to this source'''
-		tags, entry = utils.find_between(entry, '', '\n')
+		tags, entry  = _strBetween(entry, '', '\n')
+		at, entry    = _strBetween(entry, 'AT:', '\n')
+		label, entry = _strBetween(entry, 'LABEL:', '\n')
 		self.logger.debug(str(tags))
-		at, entry = utils.find_between(entry, 'AT:', '\n')
-		label, entry = utils.find_between(entry, 'LABEL:', '\n')
 
 		stripped_tags = []
 		for tag in utils.splitBy(tags,','):
 			self.con.insertOrIgnore( "Tags", "(Tag)", [(tag.strip(),),])
 			stripped_tags.append(tag.strip())
 
-		self.__entry_post_analysis(entry)
-		entryId = str(self.con.insertUnique( "Entries", "(Source, At, Info, Label)", (self._bibref, at, entry, label)))
-		self.logger.debug("Created entry #" + entryId)
+		label = self.bibref + '/' + label
 
+		refs = re.findall(r'\[\[(.+?)\]\]', entry) #find in-text references of type [[foo]]
+		cites = []
+		crefs = []
+		for ref in refs:
+			if ref.startswith('Ref:'):
+				cites.append(_strAfter(ref,'Ref:'))
+			elif ref.startswith('Cref:'):
+				cref = _strAfter(ref,'Cref:')
+				if not '/' in cref:
+					tmp = cref
+					cref = self.bibref + '/' + cref 
+					entry.replace('Cref:'+tmp, 'Cref:'+cref)
+				crefs.append(cref)
+		citestr = ','.join(cites)
+		crefstr = ','.join(crefs)
+		
+
+		entryId = str(self.con.insertUnique( "Entries", "(Source, At, Info, Label, Cites, Crefs)", 
+					(self.bibref, at, entry, label, citestr, crefstr)))
+		self.logger.debug("Created entry #" + entryId)
 		for tag in stripped_tags:
 			self.con.insert( "Tags__Entries", "(Entry, Tag)", [(entryId, tag),])
-		for tag in self._genTags:
+		for tag in self.genTags:
 			self.con.insert( "Tags__Entries", "(Entry, Tag)", [(entryId, tag),])
 
-	def __entry_post_analysis(self,entry):
-		'''Post-analysis of the entry text. It identifies entry or source cross-references and acts accordingy.'''
-		newrefs = re.findall(r'\[\[(.+?)\]\]', entry) #find in-text references of type [[foo]]
-		for newref in newrefs:
-			if newref.startswith('Ref:'):
-				self.__add_new_reference(utils.strAfter(newref,'Ref:'))
+
+def _strAfterF( f, key ):
+	"""Searches for the first occurrence of a keyword in a text file and
+	returns all text after it, until the first empty `newline` (equivalent of
+	`\\n\\n`).
+
+	Args:
+	   f (file)  : the file being parsed.
+	   key (str) : the keyword.
+
+	Returns:
+	   str, file.  Two arguments:
+	   * the first argument is the matching string
+	   * the second argument is the file object with the updated read pointer.
+
+	"""
+	tmp = f
+	string = ''
+	inside = False
+	for line in f:
+		if not '%%' in line:
+			if line.startswith(key):
+				inside = True
+				string = utils.strAfter(line,key)
+			if inside:
+				string = string + line
+				if line.strip() == "":
+					return string.strip(),f
+	return '', tmp
+
+def _strHeaderF( f ):
+	tmp = f
+	string = ''
+	inside = False
+	for line in f:
+		if line.startswith('%%'):
+			inside = True
+			string += line[2:]
+		else:
+			if inside: return string
+	return string
 
 
+def _strAfter(line,pattern):
+	"""Returns the string after a keyword."""
+	match = re.search(pattern,line)
+	if match:
+		befor_keyowrd, keyword, after_keyword = line.partition(pattern)
+		return after_keyword
+
+def _strBetween( s, first, last ):
+	try:
+		start = s.index( first ) + len( first )
+		allstart = s.index (first)
+		end = s.index( last, start )
+		new_s = s[:allstart] + s[end:]
+		return s[start:end].strip(), new_s
+	except ValueError:
+		return "", s

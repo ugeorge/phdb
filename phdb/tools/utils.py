@@ -45,35 +45,6 @@ def strAfter(line,pattern):
 		befor_keyowrd, keyword, after_keyword = line.partition(pattern)
 		return after_keyword
 
-def strAfterF( f, key ):
-	"""Searches for the first occurrence of a keyword in a text file and
-	returns all text after it, until the first empty `newline` (equivalent of
-	`\\n\\n`).
-
-	Args:
-	   f (file)  : the file being parsed.
-	   key (str) : the keyword.
-
-	Returns:
-	   str, file.  Two arguments:
-	   * the first argument is the matching string
-	   * the second argument is the file object with the updated read pointer.
-
-	"""
-	tmp = f
-	string = ''
-	inside = False
-	while True:
-		line = f.readline()
-		if not line:
-			return '',tmp
-		if inside:
-			string = string + line
-			if line.strip() == "":
-				return string.strip(),f
-		if line.startswith(key):
-			inside = True
-			string = strAfter(line,key)
 
 def replaceAfter(file, pattern, subst):
 	"""Per-line replacement of strings after a matching keyword.
@@ -96,27 +67,6 @@ def replaceAfter(file, pattern, subst):
 	old_file.close()
 	remove(file)
 	move(abs_path, file)
-
-def find_between( s, first, last ):
-	"""Returns the string between two keywords.
-
-	Args:
-	   s (str)      : input string.
-	   first (str)  : the first keyword.
-	   last (str)   : the second keyword.
-
-	Returns:
-	   str.  The string between the two keywords.
-
-	"""
-	try:
-		start = s.index( first ) + len( first )
-		allstart = s.index (first)
-		end = s.index( last, start )
-		new_s = s[:allstart] + s[end:]
-		return s[start:end].strip(), new_s
-	except ValueError:
-		return "", s
 
 #TODO: WTF, dude?!
 def treatStr(val):

@@ -14,9 +14,6 @@ class TestSettings(unittest.TestCase):
 		dargs = DummyArgs()
 		self.settings = test.Settings(dargs)
 
-	def test_environment(self):
-		self.assertIsNotNone(os.getenv('PHDB_CFG_PATH'))
-
 	def test_cfgPath(self):
 		self.assertTrue(os.path.exists(self.settings.configPath))
 

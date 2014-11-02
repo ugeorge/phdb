@@ -1,0 +1,30 @@
+#!phdb
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% TITLE: What is Love?
+%%
+%% BIBREF: haddaway93
+%%
+%% ABOUT: love
+%%
+%% REFERENCES:
+%%
+%% TAGS: modern-philosophy
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TAG: catchphrase, motivation
+AT: p2
+LABEL:question
+What is Love?
+
+
+TAG: plea
+LABEL:what
+[[Cref:question]]
+Baby don't hurt me
+	Don't hurt me
+		No more!
+
+
