@@ -1,14 +1,21 @@
 import os
 import shutil
 import unittest
-import phdb.core.sqlite3cmd as test
-import phdb.tools.settings as settings
+
 
 class DummyArgs:
 	def __init__(self):
 		self.database = ''
 		self.log = False
-		self.debug = False
+		self.debug = True
+
+import phdb.tools.settings as settings
+
+dargs = DummyArgs()
+settings = settings.Settings(dargs)
+os.environ["PHDB_CFG_PATH"] = settings.configPath
+
+import phdb.core.sqlite3cmd as test
 
 class TestSettings(unittest.TestCase):
 	
