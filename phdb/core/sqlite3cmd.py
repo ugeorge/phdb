@@ -221,7 +221,7 @@ class Connection():
 		self.connection.commit()
 		col_names = [cn[0] for cn in self.cursor.description]
 		rows = self.cursor.fetchall()
-		return [x[0] for x in rows]
+		return col_names, rows
 
 	def removeFrom(self, table, col, exp):
 		"""Simple SQLite3 remove statement.

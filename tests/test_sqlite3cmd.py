@@ -20,10 +20,9 @@ import phdb.core.sqlite3cmd as test
 class TestSettings(unittest.TestCase):
 	
 	def setUp(self):
-		dargs = DummyArgs()
-		self.settings = settings.Settings(dargs)
-		os.makedirs('.temp')
-		test.createDb('test', '.temp', 'resources')
+		if not os.path.isdir('.temp'):
+			os.makedirs('.temp')
+		test.createDb('test', '.temp', os.path.join('tests','resources'))
 		self.db = os.path.join('.temp', 'test.db')
 
 	def tearDown(self):
@@ -39,11 +38,11 @@ class TestSettings(unittest.TestCase):
 		conn.insertOrReplace('Tags','(Tag)',[('baz',), ('spam',)])
 		ident = conn.insertUnique('Tags', '(Tag)', ('egg',))
 		conn.commit()
-		rows = conn.getFrom('Tags')
+		cols, rows = conn.getFrom('Tags')
 		self.assertEqual(len(rows), 5)
 		self.assertEqual(ident, 6)
 		conn.removeFrom('Tags', 'Tag', 'foo | bar')
-		rows = conn.getFrom('Tags')
+		cols, rows = conn.getFrom('Tags')
 		self.assertEqual(len(rows), 3)
 
 

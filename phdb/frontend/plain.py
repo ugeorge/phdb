@@ -67,11 +67,12 @@ class TextParser():
 			newXrefs = [(self.bibref, x.strip(),) for x in utils.splitBy(xrefs,',')]
 			self.con.insert( "Xrefs", "(RefBy, RefTo)", newXrefs)
 		
-		gTags, header = _strBetween(header, 'REFERENCES:', '\n')
-		self.genTags = utils.splitBy(gTags,',')
+		gTags, header = _strBetween(header, 'TAGS:', '\n')
+		self.genTags = map(str.strip, utils.splitBy(gTags,','))
 		if gTags.strip():
 			generalTags = [(x.strip(),) for x in self.genTags]
 			self.con.insertOrIgnore( "Tags", "(Tag)", generalTags)
+		self.logger.debug("Found general tags: " + str(self.genTags))
 
 	def __parse_entries(self, f):
 		'''Add the entries for a source'''
@@ -100,10 +101,17 @@ class TextParser():
 		crefs = []
 		for ref in refs:
 			if ref.startswith('Ref:'):
-				cites.append(_strAfter(ref,'Ref:'))
+				newref = _strAfter(ref,'Ref:')
+				cites.append(newref)
+				self.con.insertOrIgnore( "Xrefs", "(RefBy, RefTo)", [(self.bibref, newref),])
+				self.logger.debug("Added new reference to: " + newref)
 			elif ref.startswith('Cref:'):
 				cref = _strAfter(ref,'Cref:')
-				if not '/' in cref:
+				if  '/' in cref:
+					newref = utils.splitBy(cref,'/')[0]
+					self.con.insertOrIgnore( "Xrefs", "(RefBy, RefTo)", [(self.bibref, newref),])
+					self.logger.debug("Added new reference to: " + newref)
+				else:
 					tmp = cref
 					cref = self.bibref + '/' + cref 
 					entry.replace('Cref:'+tmp, 'Cref:'+cref)
