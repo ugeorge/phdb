@@ -186,11 +186,13 @@ class Console(cmd.Cmd):
 		Output format. May be followed by a set of menu-specific options.
 		'''
 		if args:
-			args = args.split(' ',1)
+			args = args.split(' ')
 			if args[0] in self.formats:
-				self._format[0] = args[0]
-				if len(args) > 1:
-					self._format[1] = utils.splitBy(args[1], ' ')
+				self._format = {'format':args[0]}
+				widths = [e for e in map(parseElement, form[1:]) if isinstance(e, int)]
+				flags  = [e for e in map(parseElement, form[1:]) if isinstance(e, str)]
+				self._format.append({'widths':widths})
+				self._format.append({'flags':flags})
 			else:
 				log.error("Unrecognized format!")
 		else:

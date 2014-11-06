@@ -22,20 +22,15 @@ from latex import LaTeXOut
 class Backend():
 	""" Formats and prints the results of a query. API class.
 
-	:parameter form: The format of the query output as list of two element. The
-	                 first element is the format name and the second one is the
-	                 passed parameters. 
-	:type form: [str,[str,]]
+	:parameter parameters: The format parameters as a dictionary. 
+	:type form: {key:data}
 	:parameter outp: The output path (in case of a file).
 	:type outp: str.
-	:parameter cols: Column headers.
-	:type cols: [str,]
 	:parameter rows: The rows returned by a database query
 	:type rows: [(str,),]
 	"""
-	def __init__(self, form, outp):
-		widths = [e for e in map(parseElement, form[1]) if isinstance(e, int)]
-		flags  = [e for e in map(parseElement, form[1]) if isinstance(e, str)]
+	def __init__(self, parameters, outp):
+
 		form   = form[0]
 		if form == 'console':
 			self._back = ConsoleOut(widths)

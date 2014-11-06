@@ -100,5 +100,5 @@ class TestStandaloneCase1(unittest.TestCase):
 		self.assertTrue(os.path.isfile(os.path.join('.temp1','ugeorge14')))
 		self.assertTrue(os.path.isfile(os.path.join('.temp1','haddaway93')))
 
-	"""def test_5_database_format(self):
-		import phdb.core.sqlite3cmd as dbapi"""
+	def test_5_database_format(self):
+		import phdb.core.sqlite3cmd as dbapi
