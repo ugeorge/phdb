@@ -32,29 +32,19 @@ class PlainDumper():
 		self._f = open(os.path.join(self._path,ref), 'w+')
 		self._f.write("#!phdb\n\n")
 
-	def dumpRef(self,text):
-		content = "BIBREF: " + text + "\n\n"
+	def dumpHeader(self,data):
+		content = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n%%\n"
+		content += "%% BIBREF: " + data['BIBREF'] + "\n%%\n"
+		content += "%% ABOUT: " + data['ABOUT'] + "\n%%\n"
+		content += "%% REFERENCES: " + data['REFERENCES'] + "\n%%\n"
+		content += "%% TAGS: " + data['TAGS'] + "\n%%\n"
+		content += "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n"
 		self._f.write(content)
 
-	def dumpAbout(self,text):
-		content = "ABOUT: " + text + "\n\n"
-		self._f.write(content)
-
-	def dumpConcl(self,text):
-		content = "CONCLUSION: " + text + "\n\n"
-		self._f.write(content)
-
-	def dumpXrefs(self,text):
-		content = "REFERENCES: " + text + "\n\n"
-		self._f.write(content)
-
-	def dumpGTags(self,text):
-		content = "TAGS: " + text + "\n\nEntries\n-------\n\n"
-		self._f.write(content)
-
-	def dumpEntry(self,tags = '', at = '' , info = ''):
-		content = "TAG: " + tags + "\n"\
-				+ "AT: " + at + "\n"\
-				+ info + "\n\n"
+	def dumpEntry(self, data):
+		content = "TAG: " + data['TAG'] + "\n"\
+				+ "AT: " + data['AT'] + "\n"\
+				+ "LABEL: " + data['LABEL'] + "\n"\
+				+ data['INFO'] + "\n\n"
 		self._f.write(content)
 

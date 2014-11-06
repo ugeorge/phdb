@@ -21,44 +21,28 @@ from phdb.dumper import plain
 class DbDumper():
 	"""Dumps the contents of a database. API class."""
 
-	def __init__(self, form, outp):
+	def __init__(self, parameters, outp):
 		"""Default constructor. It initializes a different dumper according to 
-		the *form* parameter.
+		the *format* parameter.
 		
-		:parameter form: dump format. Initializes one of the available dumpers.
-		:type format: str
+		:parameter parameters: dumper parameters. Initializes one of the available dumpers.
+		:type parameters: {key:}
 		:parameter outp: dump path.
 		:type outp: str
 		"""
-		if form[0] == 'plain':
+		if parameters['format'] == 'plain':
 			self._dumper = plain.PlainDumper(outp)
 	
 	def dumpNewSource(self,data):
 		"""Initializes the container for a new source."""
 		self._dumper.dumpNewSource(data)
 
-	def dumpRef(self,data):
-		"""Dumps the *References* field."""
-		self._dumper.dumpRef(data)
+	def dumpHeader(self,data):
+		"""Dumps the header."""
+		self._dumper.dumpHeader(data)
 
-	def dumpAbout(self,data):
-		"""Dumps the *About* field."""
-		self._dumper.dumpAbout(data)
-
-	def dumpConcl(self,data):
-		"""Dumps the *Conclusion* field."""
-		self._dumper.dumpConcl(data)
-
-	def dumpXrefs(self,data):
-		"""Dumps the *Cross-references* field."""
-		self._dumper.dumpXrefs(data)
-
-	def dumpGTags(self,data):
-		"""Dumps the *Global tags* field."""
-		self._dumper.dumpGTags(data)
-
-	def dumpEntry(self, tags, at, info):
+	def dumpEntry(self, data):
 		"""Dumps an entry field."""
-		self._dumper.dumpEntry(tags, at, info)
+		self._dumper.dumpEntry(data)
 
 

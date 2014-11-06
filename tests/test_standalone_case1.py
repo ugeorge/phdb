@@ -38,7 +38,7 @@ class TestStandaloneCase1(unittest.TestCase):
 		parser = Frontend(dbCon, 'plain', os.path.join('tests','resources'))
 		parser.harvest()
 		cols, tags = dbCon.getFrom('Tags')
-		self.assertEqual(len(tags),6)
+		self.assertEqual(len(tags),7)
 		cols, assoc = dbCon.getFrom('Tags__Entries')
 		self.assertEqual(len(assoc),12)
 		cols, xrefs = dbCon.getFrom('Xrefs')
@@ -54,6 +54,9 @@ class TestStandaloneCase1(unittest.TestCase):
 		self.assertEqual(len(rows), 2)
 		col_names, rows = dbCon.qGetEntries()
 		self.assertEqual(len(rows), 5)
+		col_names, rows = dbCon.qGetEntries(filterExp = '(catchphrase & /motivation) | plea', 
+							srcs = ['ugeorge14',])
+		self.assertEqual(len(rows), 1)
 		col_names, rows = dbCon.qGetEntries(filterExp = '(catchphrase & /motivation) | plea')
 		self.assertEqual(len(rows), 2)
 		for row in rows:
@@ -68,3 +71,34 @@ class TestStandaloneCase1(unittest.TestCase):
 				if ref.startswith('Cref:'):
 					testcref = utils.strAfter(ref,'Cref:')
 					self.assertTrue(testcref in cref)
+
+	def test_3_database_manipulation(self):
+		import phdb.core.sqlite3cmd as dbapi
+
+		dbCon = dbapi.Connection(self.db)
+		typos = dbCon.evaluateDb_typos(0.8)
+		self.assertEqual(len(typos),1)
+		inval = dbCon.evaluateDb_validTag(2)
+		self.assertEqual(len(inval),3)
+		dbCon.replaceLinks(('Tags','Tag'), ('Tags__Entries', 'Tag'), 
+						[(typos[0][1][0],typos[0][0][0]),] )
+		inval = dbCon.evaluateDb_validTag(2)
+		self.assertEqual(len(inval),2)
+		dbCon.removeLinks(('Tags','Tag'), ('Tags__Entries', 'Tag'), 
+						["marshmallow",] )
+		cols, tags = dbCon.getFrom('Tags')
+		tagstr = [x[0] for x in tags]
+		self.assertFalse("marshmallow" in tagstr)
+
+	def test_4_database_dump(self):
+		import phdb.core.sqlite3cmd as dbapi
+		import phdb.dumper as dump
+
+		dbCon = dbapi.Connection(self.db)
+		dumper = dump.DbDumper(parameters = {'format':'plain',}, outp = '.temp1')
+		dbCon.executeDumpDb(dumper);
+		self.assertTrue(os.path.isfile(os.path.join('.temp1','ugeorge14')))
+		self.assertTrue(os.path.isfile(os.path.join('.temp1','haddaway93')))
+
+	"""def test_5_database_format(self):
+		import phdb.core.sqlite3cmd as dbapi"""

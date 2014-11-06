@@ -257,8 +257,8 @@ class Connection():
 		:parameter link: Pair of table name and column name that points to the place
 		 of the link that needs to be updated.
 		:type link: (str,str)
-		:parameter listOfTags: List with pairs of data (to be replaced, replace with).
-		:type listOfTags: [(str,str),]
+		:parameter replacePairs: List with pairs of data (to be replaced, replace with).
+		:type replacePairs: [(str,str),]
 		"""
 		origTab = original[0]
 		origCol = original[1]
@@ -427,8 +427,6 @@ class Connection():
 	def executeDumpDb(self, dumper):
 		"""Dumps the contents of a database in a chosen format, specified in :mod:`phdb.dumper.api`
 
-		:parameter db: Path to the database.
-		:type db: str.
 		:parameter dumper: An initialized dumper.
 		:type outp: :class:`phdb.dumper.api.DbDumper`.
 		"""
@@ -442,7 +440,7 @@ class Connection():
 			dumper.dumpNewSource(src)
 
 			command = "\n"\
-				+ "\tSELECT s.BibRef, s.About, s.Conclusion, GROUP_CONCAT(distinct x.RefTo) \n"\
+				+ "\tSELECT s.BibRef, s.About, GROUP_CONCAT(distinct x.RefTo) \n"\
 				+ "\t	FROM Source AS s \n"\
 				+ "\tLEFT JOIN Xrefs AS x ON x.RefBy = s.BibRef \n"\
 				+ "\tWHERE s.BibRef = '"+ src +"' \n"\
@@ -451,14 +449,14 @@ class Connection():
 			data = self.cursor.fetchall()
 			data = map(utils.treatStr, list(data[0]))
 			logger.debug(str(data))		
-			dumper.dumpRef(data[0]) 
-			dumper.dumpAbout(data[1])
-			dumper.dumpConcl(data[2])
-			dumper.dumpXrefs(data[3])
-			dumper.dumpGTags('')
+			dumper.dumpHeader({	
+				'BIBREF':data[0],
+			 	"ABOUT":data[1],
+				"REFERENCES":data[2],
+				"TAGS":""}) 
 
 			command = " \n"\
-				+ "\tSELECT e.Info, e.At, GROUP_CONCAT(distinct t.Tag)\n"\
+				+ "\tSELECT e.Info, e.At, e.Label, GROUP_CONCAT(distinct t.Tag)\n"\
 				+ "\tFROM Entries AS e\n"\
 				+ "\t	LEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 				+ "\t	LEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
@@ -469,7 +467,11 @@ class Connection():
 			for entry in data:
 				entry = map(utils.treatStr, list(entry))
 				logger.debug(str(entry))	
-				dumper.dumpEntry(tags = entry[2], at = entry[1], info = entry[0])
+				dumper.dumpEntry({
+					'TAG':entry[3],
+					'AT':entry[1], 
+					'INFO':entry[0], 
+					'LABEL':entry[2]})
 		return
 
 
@@ -481,6 +483,8 @@ class Connection():
 		:parameter tolerance: the percentage of similarity between two tags to 
 		  be considered a typo.
 		:type tolerance: int.
+		:returns: [[(str,int),(str,int)],] -- typoed tags and their pair as tuple 
+		  containing the number of occurences
 		"""
 		command = "SELECT Tag, Count(*) FROM Tags__Entries GROUP BY Tag;"
 		self.cursor.execute(command)        
@@ -513,6 +517,7 @@ class Connection():
 		:parameter threshold: the number of minimum tag occurrences to be considered 
 		  a valid tag
 		:type threshold: int.
+		:returns: [(str,int),] -- invalid tags and their count
 		"""
 		command = "SELECT Tag, Count(*) FROM Tags__Entries GROUP BY Tag;"
 		self.cursor.execute(command)        
