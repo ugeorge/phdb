@@ -1,6 +1,8 @@
 import os
+import re
 import shutil
 import unittest
+import phdb.tools.utils as utils
 
 class DummyArgs:
 	def __init__(self):
@@ -49,10 +51,20 @@ class TestStandaloneCase1(unittest.TestCase):
 
 		dbCon = dbapi.Connection(self.db)
 		col_names, rows = dbCon.qGetSources()
-		print col_names
 		self.assertEqual(len(rows), 2)
 		col_names, rows = dbCon.qGetEntries()
 		self.assertEqual(len(rows), 5)
 		col_names, rows = dbCon.qGetEntries(filterExp = '(catchphrase & /motivation) | plea')
-		print col_names
-		print "\n".join(map(str,rows))
+		self.assertEqual(len(rows), 2)
+		for row in rows:
+			info = row[col_names.index("Info")]
+			cite = row[col_names.index("Cites")]
+			cref = row[col_names.index("Crefs")]
+			refs = re.findall(r'\[\[(.+?)\]\]', info)
+			for ref in refs:
+				if ref.startswith('Ref:'):
+					testref = utils.strAfter(ref,'Ref:')
+					self.assertTrue(testref in cite)
+				if ref.startswith('Cref:'):
+					testcref = utils.strAfter(ref,'Cref:')
+					self.assertTrue(testcref in cref)

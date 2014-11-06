@@ -112,11 +112,13 @@ class SqLite3FilterParser():
 
 	def parseNode (self, op, l, r = None):
 		if op == 'TAG':
-			return self.base + "='" + l + "' "
+			return self.base + " LIKE '%" + l + "%' "
 		elif op == 'WILDB':
-			return self.base + "LIKE '%" + l + "' "
+			#return self.base + "LIKE '%" + l + "' "
+			return self.base + " LIKE '%" + l + "%' "
 		elif op == 'WILDA':
-			return self.base + "LIKE '" + l + "%' "
+			#return self.base + "LIKE '" + l + "%' "
+			return self.base + " LIKE '%" + l + "%' "
 		elif op == '/':
 			return 'NOT ' + self.parseNode(*l);
 		elif op == '()':
@@ -371,7 +373,7 @@ class Connection():
 		if filterExp:
 			filterTree = getExpTree(filterExp)
 			parser     = SqLite3FilterParser(TAGGED)
-			tags       = 'WHERE ' + parser.parseNode(*filterTree)
+			tags       = 'HAVING ' + parser.parseNode(*filterTree)
 
 		command = " \n"\
 			+ "\tSELECT e.Id, e.Info, e.At, e.Label, e.Cites, e.Crefs, \n"\
@@ -379,10 +381,9 @@ class Connection():
 			+ "\tFROM Entries AS e\n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
-			+ "\t" + tags +" \n"\
 			+ "\t" + _srcListToStr("e.Source", srcs) +" \n"\
-			+ "\tGROUP BY e.Id; "
-		print command
+			+ "\tGROUP BY e.Id \n"\
+			+ "\t" + tags +";"
 		logger.debug(command)
 		self.cursor.execute(command)        
 		self.connection.commit()

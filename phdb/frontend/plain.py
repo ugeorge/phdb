@@ -84,7 +84,7 @@ class TextParser():
 
 	def __add_new_entry(self, entry):
 		'''Add a new entry to this source'''
-		tags, entry  = _strBetween(entry, '', '\n')
+		tags, entry  = _strBetween(entry, 'TAG:', '\n')
 		at, entry    = _strBetween(entry, 'AT:', '\n')
 		label, entry = _strBetween(entry, 'LABEL:', '\n')
 		self.logger.debug(str(tags))
@@ -94,19 +94,20 @@ class TextParser():
 			self.con.insertOrIgnore( "Tags", "(Tag)", [(tag.strip(),),])
 			stripped_tags.append(tag.strip())
 
-		label = self.bibref + '/' + label
+		if label:
+			label = self.bibref + '/' + label
 
 		refs = re.findall(r'\[\[(.+?)\]\]', entry) #find in-text references of type [[foo]]
 		cites = []
 		crefs = []
 		for ref in refs:
 			if ref.startswith('Ref:'):
-				newref = _strAfter(ref,'Ref:')
+				newref = utils.strAfter(ref,'Ref:')
 				cites.append(newref)
 				self.con.insertOrIgnore( "Xrefs", "(RefBy, RefTo)", [(self.bibref, newref),])
 				self.logger.debug("Added new reference to: " + newref)
 			elif ref.startswith('Cref:'):
-				cref = _strAfter(ref,'Cref:')
+				cref = utils.strAfter(ref,'Cref:')
 				if  '/' in cref:
 					newref = utils.splitBy(cref,'/')[0]
 					self.con.insertOrIgnore( "Xrefs", "(RefBy, RefTo)", [(self.bibref, newref),])
@@ -151,7 +152,6 @@ def _strAfterF( f, key ):
 		if not '%%' in line:
 			if line.startswith(key):
 				inside = True
-				string = utils.strAfter(line,key)
 			if inside:
 				string = string + line
 				if line.strip() == "":
@@ -170,13 +170,6 @@ def _strHeaderF( f ):
 			if inside: return string
 	return string
 
-
-def _strAfter(line,pattern):
-	"""Returns the string after a keyword."""
-	match = re.search(pattern,line)
-	if match:
-		befor_keyowrd, keyword, after_keyword = line.partition(pattern)
-		return after_keyword
 
 def _strBetween( s, first, last ):
 	try:
