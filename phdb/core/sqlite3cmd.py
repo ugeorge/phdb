@@ -125,7 +125,6 @@ class SqLite3FilterParser():
 			return self.parseNode(*l) + ' AND ' + self.parseNode(*r)
 		elif op == '|':
 			return self.parseNode(*l) + ' OR ' + self.parseNode(*r)
-
 	
 
 class Connection():
@@ -334,7 +333,8 @@ class Connection():
 		col_names = []
 		rows = []
 		command = "\n" \
-			+ "\tSELECT *, GROUP_CONCAT(distinct x.RefTo) AS " + REFERS + ", \n"\
+			+ "\tSELECT s.BibRef, s.About, \n"\
+			+ "\t          GROUP_CONCAT(distinct x.RefTo) AS " + REFERS + ", \n"\
 			+ "\t          GROUP_CONCAT(distinct t.Tag) AS " + TAGS + " \n"\
 			+ "\tFROM Source AS s \n"\
 			+ "\tLEFT JOIN Entries AS e ON e.Source = s.BibRef \n"\
@@ -370,12 +370,13 @@ class Connection():
 		tags = ''
 		if filterExp:
 			filterTree = getExpTree(filterExp)
-			parser     = SqLite3FilterParser('te.Tag')
+			parser     = SqLite3FilterParser(TAGGED)
 			tags       = 'WHERE ' + parser.parseNode(*filterTree)
 
 		command = " \n"\
-			+ "\tSELECT *, GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
-			+ "\t	FROM Entries AS e\n"\
+			+ "\tSELECT e.Id, e.Info, e.At, e.Label, e.Cites, e.Crefs, \n"\
+			+ "\t       GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
+			+ "\tFROM Entries AS e\n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
 			+ "\t" + tags +" \n"\
