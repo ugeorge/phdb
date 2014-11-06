@@ -15,7 +15,7 @@ try:
 	confPath = os.path.join(os.getenv('PHDB_CFG_PATH'), "logger.conf")
 	logging.config.fileConfig(confPath)
 except AttributeError:
-	log.warn("PHDB_CFG_PATH was not set. Cannot log events.")
+	pass
 logger = logging.getLogger(__name__)
 
 import phdb.tools.utils as utils

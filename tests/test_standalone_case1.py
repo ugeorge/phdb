@@ -14,10 +14,6 @@ dargs = DummyArgs()
 settings = settings.Settings(dargs)
 os.environ["PHDB_CFG_PATH"] = settings.configPath
 
-
-import phdb.core.sqlite3cmd as dbapi
-import phdb.interface.cli as cli
-
 class TestStandaloneCase1(unittest.TestCase):
 	
 	def setUp(self):
@@ -28,7 +24,8 @@ class TestStandaloneCase1(unittest.TestCase):
 	#def tearDown(self):
 	#	shutil.rmtree('.temp1')
 
-	def test_frontend_parse(self):
+	def test_1_frontend_parse(self):
+		import phdb.core.sqlite3cmd as dbapi
 		from phdb.frontend import Frontend
 
 		dbapi.createDb(name = 'test', 
@@ -46,3 +43,16 @@ class TestStandaloneCase1(unittest.TestCase):
 		self.assertEqual(len(xrefs),1)
 		cols, src = dbCon.getFrom('Source')
 		self.assertEqual(len(src),2)
+
+	def test_2_basic_querries(self):
+		import phdb.core.sqlite3cmd as dbapi
+
+		dbCon = dbapi.Connection(self.db)
+		col_names, rows = dbCon.qGetSources()
+		print col_names
+		self.assertEqual(len(rows), 2)
+		col_names, rows = dbCon.qGetEntries()
+		self.assertEqual(len(rows), 5)
+		col_names, rows = dbCon.qGetEntries(filterExp = '(catchphrase & /motivation) | plea')
+		print col_names
+		print "\n".join(map(str,rows))

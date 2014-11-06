@@ -94,10 +94,11 @@ def createDb(name, loc, resources):
 		cursor.execute("CREATE TABLE Tags(\
 			Tag TEXT UNIQUE NOT NULL PRIMARY KEY)")
 		cursor.execute("CREATE TABLE Xrefs(\
-			RefBy TEXT,\
-			RefTo TEXT,\
+			RefBy TEXT NOT NULL,\
+			RefTo TEXT NOT NULL,\
 			FOREIGN KEY(RefBy) REFERENCES Source(BibRef) ,\
-			FOREIGN KEY(RefTo) REFERENCES Source(BibRef) )")
+			FOREIGN KEY(RefTo) REFERENCES Source(BibRef), \
+			PRIMARY KEY (RefBy, RefTo))")
 		cursor.execute("CREATE TABLE Tags__Entries(\
 			Entry INT,\
 			Tag TEXT)")
@@ -320,7 +321,7 @@ class Connection():
 			logger.error(str(e.__class__) + " " + ', '.join(e.args))
 		return col_names, rows
 
-	def qGetSources(self, srcs):
+	def qGetSources(self, srcs = None):
 		"""Executes a pre-defined query which returns information about sources and
 		writes it to a chosen backend.
 
@@ -334,7 +335,7 @@ class Connection():
 		rows = []
 		command = "\n" \
 			+ "\tSELECT *, GROUP_CONCAT(distinct x.RefTo) AS " + REFERS + ", \n"\
-			+ "\t          GROUP_CONCAT(distinct t.Tag) AS " + TAGS + ", \n"\
+			+ "\t          GROUP_CONCAT(distinct t.Tag) AS " + TAGS + " \n"\
 			+ "\tFROM Source AS s \n"\
 			+ "\tLEFT JOIN Entries AS e ON e.Source = s.BibRef \n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
@@ -352,7 +353,7 @@ class Connection():
 		return col_names, rows
 
 
-	def qGetEntries(self, srcs, filterExp):
+	def qGetEntries(self, filterExp = None, srcs = None):
 		"""Executes a pre-defined query which returns (idea) entries and
 		writes it to a chosen backend. Includes lable column.
 
@@ -369,7 +370,7 @@ class Connection():
 		tags = ''
 		if filterExp:
 			filterTree = getExpTree(filterExp)
-			parser     = Sqlite3FilterParser('te.Tag')
+			parser     = SqLite3FilterParser('te.Tag')
 			tags       = 'WHERE ' + parser.parseNode(*filterTree)
 
 		command = " \n"\
@@ -380,6 +381,7 @@ class Connection():
 			+ "\t" + tags +" \n"\
 			+ "\t" + _srcListToStr("e.Source", srcs) +" \n"\
 			+ "\tGROUP BY e.Id; "
+		print command
 		logger.debug(command)
 		self.cursor.execute(command)        
 		self.connection.commit()
