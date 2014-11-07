@@ -105,15 +105,28 @@ class TestStandaloneCase1(unittest.TestCase):
 
 		param = {'format':'console', 'widths':[10,50,20], 'flags':''}
 		backend = back.Backend(param, '')
-		backendMsg = 'reviews'
+		param['format']='plain'
 		variables = {'db':self.db, 'sources':''}
+		backendMsg = 'reviews'
 		backend.writeout(backendMsg, variables)
 		backendMsg = 'entries'
 		variables['filter'] = '(catchphrase & /motivation) | plea'
 		backend.writeout(backendMsg, variables)
 
 		param['format']='plain'
-		backend = back.Backend(param, os.path.join('.temp1','test.out'))
+		backendMsg = 'reviews'
+		backend = back.Backend(param, os.path.join('.temp1','reviews.txt'))
 		backend.writeout(backendMsg, variables)
-		self.assertTrue(os.path.isfile(os.path.join('.temp1','test.out')))
-		self.assertTrue(sum(1 for line in open(os.path.join('.temp1','test.out'))) >= 24)
+		backendMsg = 'entries'
+		backend = back.Backend(param, os.path.join('.temp1','entries.txt'))
+		backend.writeout(backendMsg, variables)
+		self.assertTrue(os.path.isfile(os.path.join('.temp1','reviews.txt')))
+		self.assertTrue(os.path.isfile(os.path.join('.temp1','entries.txt')))
+		self.assertTrue(sum(1 for line in open(os.path.join('.temp1','entries.txt'))) >= 24)
+
+		param['format']='latex'
+		param['widths']=[0.1, 0.5]
+		backendMsg = 'reviews'
+		backend = back.Backend(param, os.path.join('.temp1','reviews.tex'))
+		backend.writeout(backendMsg, variables)
+		

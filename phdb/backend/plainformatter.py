@@ -15,8 +15,6 @@ import logging
 
 from itertools import izip_longest
 
-import utils
-
 try:
 	confPath = os.path.join(os.getenv('PHDB_CFG_PATH'), "logger.conf")
 	logging.config.fileConfig(confPath)

@@ -35,7 +35,7 @@ class Backend():
 		if form == 'console':
 			self._back = ConsoleOut(parameters['widths'])
 		elif form == 'plain':
-			self._back = PlainOut(parameters['widths'], outp)
+			self._back = PlainOut(parameters['widths'], parameters['flags'], outp)
 		elif form == 'latex':
 			self._back = LaTeXOut(parameters['widths'], parameters['flags'], outp)
 	

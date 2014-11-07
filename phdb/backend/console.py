@@ -11,7 +11,7 @@ import textwrap
 import logging
 import os
 
-import phdb.tools.textwrapper as wrap
+import plainformatter as wrap
 import phdb.core.sqlite3cmd as dbapi
 
 try:

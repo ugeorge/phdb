@@ -11,7 +11,7 @@ import textwrap
 import logging
 import os
 
-import phdb.tools.textwrapper as wrap
+import plainformatter as wrap
 import phdb.core.sqlite3cmd as dbapi
 
 try:
@@ -33,12 +33,13 @@ class PlainOut():
 	:parameter widths: Column widths.
 	:type widths: [int,]
 	"""
-	def __init__(self, widths, out):
+	def __init__(self, widths, flags, out):
 		if not widths:
 			self._widths = [30]
 		else:
 			self._widths = widths
 		self._output = out
+		self._flags = flags
 		logger.debug(str(self._widths))
 	
 	def writeout(self, msg, variables):
@@ -46,7 +47,7 @@ class PlainOut():
 		if msg == 'reviews':
 			reviews(variables, self._widths, self._output)
 		elif msg == 'entries':
-			entries(variables, self._widths, self._output)
+			entries(variables, self._widths, self._flags, self._output)
 		elif msg == 'custom':
 			custom(variables, self._widths, self._output)
 
@@ -66,7 +67,7 @@ def reviews(variables, widths, output):
 	f.close()
 
 
-def entries(variables, widths, output):
+def entries(variables, widths, flags, output):
 	dbCon = dbapi.Connection(variables['db'])
 	header, rows = dbCon.qGetEntries(
 		filterExp = variables['filter'],
@@ -93,18 +94,19 @@ def entries(variables, widths, output):
 	f.write(content)
 	f.close()
 
-	newsrcs = set([x.split('/')[0] for x in crefs])
-	header, rows = dbCon.qGetCrefs(
-		lables    = crefs,
-		srcs      = newsrcs)
-	content = wrap.indent([header]+rows, hasHeader=True, separateRows=True,
-	             prefix='| ', postfix=' |', 
-	             wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
-		         widths = widths)
-	f = open(output, "a")
-	f.write("\n\nReferenced entries:\n\n")
-	f.write(content)
-	f.close()
+	if not '-nocref' in flags:
+		newsrcs = set([x.split('/')[0] for x in crefs])
+		header, rows = dbCon.qGetCrefs(
+			lables    = crefs,
+			srcs      = newsrcs)
+		content = wrap.indent([header]+rows, hasHeader=True, separateRows=True,
+			         prefix='| ', postfix=' |', 
+			         wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
+				     widths = widths)
+		f = open(output, "a")
+		f.write("\n\nReferenced entries:\n\n")
+		f.write(content)
+		f.close()
 
 
 def custom(variables):
