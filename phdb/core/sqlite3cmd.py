@@ -408,8 +408,9 @@ class Connection():
 		rows = []
 
 		command = " \n"\
-			+ "\tSELECT *, GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
-			+ "\t	FROM Entries AS e\n"\
+			+ "\tSELECT e.Id, e.Info, e.Source, e.At, e.Label, \n"\
+			+ "\t   GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
+			+ "\tFROM Entries AS e\n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\
 			+ "\tLEFT JOIN Tags AS t ON t.Tag = te.Tag \n"\
 			+ "\tWHERE e.Label in ("+ _tagsListToStr(lables) +") \n"\

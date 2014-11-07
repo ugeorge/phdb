@@ -103,7 +103,7 @@ class TestStandaloneCase1(unittest.TestCase):
 	def test_5_database_format(self):
 		import phdb.backend as back
 
-		param = {'format':'console', 'widths':[10,60,20], 'flags':''}
+		param = {'format':'console', 'widths':[10,50,20], 'flags':''}
 		backend = back.Backend(param, '')
 		backendMsg = 'reviews'
 		variables = {'db':self.db, 'sources':''}
@@ -116,3 +116,4 @@ class TestStandaloneCase1(unittest.TestCase):
 		backend = back.Backend(param, os.path.join('.temp1','test.out'))
 		backend.writeout(backendMsg, variables)
 		self.assertTrue(os.path.isfile(os.path.join('.temp1','test.out')))
+		self.assertTrue(sum(1 for line in open(os.path.join('.temp1','test.out'))) >= 24)

@@ -44,32 +44,69 @@ class PlainOut():
 	def writeout(self, msg, variables):
 		"""Start formatting and printing"""
 		if msg == 'reviews':
-			header, data = reviews(variables)
+			reviews(variables, self._widths, self._output)
 		elif msg == 'entries':
-			header, data = entries(variables)
+			entries(variables, self._widths, self._output)
 		elif msg == 'custom':
-			header = variables["header"]
-			data   = variables["data"]
+			custom(variables, self._widths, self._output)
 
-		data = map(lambda x: ['' if v is None else v for v in list(x)], data)
-		content = wrap.indent([header]+data, hasHeader=True, separateRows=True,
-		             prefix='| ', postfix=' |', 
-		             wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
-			         widths = self._widths)
-		f = open(self._output, "w")
-		f.write(content)
-		f.close()
 
-def reviews(variables):
+def reviews(variables, widths, output):
 	dbCon = dbapi.Connection(variables['db'])
-	col_names, rows = dbCon.qGetSources(
-		srcs      = variables['sources'])	
-	return col_names, rows
+	header, data = dbCon.qGetSources(
+	srcs      = variables['sources'])	
+
+	data = map(lambda x: ['' if v is None else v for v in list(x)], data)
+	content = wrap.indent([header]+data, hasHeader=True, separateRows=True,
+	             prefix='| ', postfix=' |', 
+	             wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
+		         widths = widths)
+	f = open(output, "w")
+	f.write(content)
+	f.close()
 
 
-def entries(variables):
+def entries(variables, widths, output):
 	dbCon = dbapi.Connection(variables['db'])
-	col_names, rows = dbCon.qGetEntries(
+	header, rows = dbCon.qGetEntries(
 		filterExp = variables['filter'],
 		srcs      = variables['sources'])	
-	return col_names, rows
+	printdata = []
+	crefs = []
+	for row in rows:
+		row = ['' if v is None else v for v in list(row)]
+		crossrefs = row[header.index('Crefs')]
+		if crossrefs : 
+			if ',' in crossrefs: crefs.append(','.split(crossrefs))
+			else: crefs.append(crossrefs)
+		del row[header.index('Crefs')]
+		del row[header.index('Cites')]
+		printdata.append(row)
+	del header[header.index('Cites')]
+	del header[header.index('Crefs')]
+
+	content = wrap.indent([header]+printdata, hasHeader=True, separateRows=True,
+	             prefix='| ', postfix=' |', 
+	             wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
+		         widths = widths)
+	f = open(output, "w")
+	f.write(content)
+	f.close()
+
+	newsrcs = set([x.split('/')[0] for x in crefs])
+	header, rows = dbCon.qGetCrefs(
+		lables    = crefs,
+		srcs      = newsrcs)
+	content = wrap.indent([header]+rows, hasHeader=True, separateRows=True,
+	             prefix='| ', postfix=' |', 
+	             wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
+		         widths = widths)
+	f = open(output, "a")
+	f.write("\n\nReferenced entries:\n\n")
+	f.write(content)
+	f.close()
+
+
+def custom(variables):
+	pass
+
