@@ -101,4 +101,18 @@ class TestStandaloneCase1(unittest.TestCase):
 		self.assertTrue(os.path.isfile(os.path.join('.temp1','haddaway93')))
 
 	def test_5_database_format(self):
-		import phdb.core.sqlite3cmd as dbapi
+		import phdb.backend as back
+
+		param = {'format':'console', 'widths':[10,60,20], 'flags':''}
+		backend = back.Backend(param, '')
+		backendMsg = 'reviews'
+		variables = {'db':self.db, 'sources':''}
+		backend.writeout(backendMsg, variables)
+		backendMsg = 'entries'
+		variables['filter'] = '(catchphrase & /motivation) | plea'
+		backend.writeout(backendMsg, variables)
+
+		param['format']='plain'
+		backend = back.Backend(param, os.path.join('.temp1','test.out'))
+		backend.writeout(backendMsg, variables)
+		self.assertTrue(os.path.isfile(os.path.join('.temp1','test.out')))

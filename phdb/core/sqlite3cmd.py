@@ -376,7 +376,7 @@ class Connection():
 			tags       = 'HAVING ' + parser.parseNode(*filterTree)
 
 		command = " \n"\
-			+ "\tSELECT e.Id, e.Info, e.At, e.Label, e.Cites, e.Crefs, \n"\
+			+ "\tSELECT e.Id, e.Info, e.Source, e.At, e.Label, e.Cites, e.Crefs, \n"\
 			+ "\t       GROUP_CONCAT(distinct t.Tag) AS " + TAGGED + "\n"\
 			+ "\tFROM Entries AS e\n"\
 			+ "\tLEFT JOIN Tags__Entries AS te ON te.Entry = e.Id \n"\

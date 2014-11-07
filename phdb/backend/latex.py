@@ -11,7 +11,6 @@ import os
 import re
 
 import phdb.core.sqlite3cmd as dbapi
-import phdb.core.filter as filterparse
 from phdb.core.names import *
 
 try:

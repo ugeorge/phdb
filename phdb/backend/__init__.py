@@ -31,13 +31,13 @@ class Backend():
 	"""
 	def __init__(self, parameters, outp):
 
-		form   = form[0]
+		form   = parameters['format']
 		if form == 'console':
-			self._back = ConsoleOut(widths)
+			self._back = ConsoleOut(parameters['widths'])
 		elif form == 'plain':
-			self._back = plain(widths, out)
+			self._back = PlainOut(parameters['widths'], outp)
 		elif form == 'latex':
-			self._back = LaTeXOut(widths, flags, outp)
+			self._back = LaTeXOut(parameters['widths'], parameters['flags'], outp)
 	
 	def writeout(self, msg, varDict=None):
 		"""Start formatting, executing querries and printing
@@ -52,11 +52,5 @@ class Backend():
 		return self._back.writeout(msg, varDict)
 
 
-def parseElement(string):
-	val = string
-	try:
-		val = int(string)
-	except ValueError:
-		pass
-	return val
+
 

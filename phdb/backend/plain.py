@@ -12,7 +12,6 @@ import logging
 import os
 
 import phdb.tools.textwrapper as wrap
-import phdb.core.filter as filterparse
 import phdb.core.sqlite3cmd as dbapi
 
 try:
@@ -52,6 +51,7 @@ class PlainOut():
 			header = variables["header"]
 			data   = variables["data"]
 
+		data = map(lambda x: ['' if v is None else v for v in list(x)], data)
 		content = wrap.indent([header]+data, hasHeader=True, separateRows=True,
 		             prefix='| ', postfix=' |', 
 		             wrapfunc=lambda (x,y): wrap.wrap_onspace_strict(x,y), 
@@ -72,4 +72,4 @@ def entries(variables):
 	col_names, rows = dbCon.qGetEntries(
 		filterExp = variables['filter'],
 		srcs      = variables['sources'])	
-	return col_names, fRows
+	return col_names, rows

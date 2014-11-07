@@ -185,14 +185,21 @@ class Console(cmd.Cmd):
 		'''format <format> [options]
 		Output format. May be followed by a set of menu-specific options.
 		'''
+		def __parseElement(string):
+			val = string
+			try:
+				val = int(string)
+			except ValueError:
+				pass
+			return val
 		if args:
 			args = args.split(' ')
 			if args[0] in self.formats:
 				self._format = {'format':args[0]}
-				widths = [e for e in map(parseElement, form[1:]) if isinstance(e, int)]
-				flags  = [e for e in map(parseElement, form[1:]) if isinstance(e, str)]
-				self._format.append({'widths':widths})
-				self._format.append({'flags':flags})
+				widths = [e for e in map(__parseElement, args[1:]) if isinstance(e, int)]
+				flags  = [e for e in map(__parseElement, args[1:]) if isinstance(e, str)]
+				self._format['widths'] = widths
+				self._format['flags'] = flags
 			else:
 				log.error("Unrecognized format!")
 		else:
